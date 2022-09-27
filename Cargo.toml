@@ -1,0 +1,11 @@
+[package]
+name = "cargo-contemplate"
+version = "0.1.0"
+edition = "2021"
+description = "fetch templates for stuffs"
+license = "Apache-2.0"
+keywords = ["templates"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
