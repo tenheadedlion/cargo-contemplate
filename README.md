@@ -2,7 +2,7 @@
 
 ## Install
 
-```
+```shell
 cargo install cargo-contemplate
 ```
 
@@ -21,6 +21,12 @@ Currently supported classes:
 
 ```shell
 cargo contemplate phat-contract
-````
+```
 
 The command above will create a directory with the name "phat-contract-start" in the current directory
+
+## Todos
+
+- [ ] clap seems to mess up `cargo-x` and `cargo x`
+- [ ] move interactive
+- [ ] support sparse-checkout
