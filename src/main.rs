@@ -5,9 +5,9 @@ use git2::{FetchOptions, Progress, RemoteCallbacks};
 use phf::phf_map;
 use rand::{distributions::Alphanumeric, Rng};
 use std::cell::RefCell;
-use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::{env, string};
 use url::{Host, Position, Url};
 
 fn base_name(url: &str) -> Result<String, Error> {
@@ -28,8 +28,9 @@ fn random_path() -> PathBuf {
     Path::join(Path::new("/tmp"), rnd_path)
 }
 
-static URLS: phf::Map<&'static str, &'static str> = phf_map! {
-    "phat-contract" => "https://github.com/tenheadedlion/phat-contract-starter.git",
+static URLS: phf::Map<&'static str, (&'static str, &'static str, &'static str)> = phf_map! {
+    "phat-contract-with-sideprog" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "master", "log_server"),
+    "phat-contract" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "plain-phat-contract", "erc20"),
 };
 
 #[derive(Debug)]
@@ -42,16 +43,19 @@ enum Error {
     GitFault,
 }
 
-#[derive(Parser)]
+#[derive(Debug)]
 struct Args {
-    #[clap(name = "class")]
     class: String,
+    dest: String,
 }
 
+#[derive(Debug)]
 struct Context {
     url: String,
     tmp_path: PathBuf,
     path: String,
+    branch: String,
+    package: String,
     current_dir: PathBuf,
 }
 
@@ -60,9 +64,11 @@ impl TryFrom<Args> for Context {
     fn try_from(args: Args) -> Result<Self, Self::Error> {
         match URLS.get(&args.class) {
             Some(url) => Ok(Context {
-                url: url.to_string(),
+                url: url.0.to_string(),
+                branch: url.1.to_string(),
+                package: url.2.to_string(),
                 tmp_path: random_path(),
-                path: base_name(url)?,
+                path: args.dest,
                 current_dir: env::current_dir().map_err(|_| Error::FileSystemFault)?,
             }),
             None => Err(Error::NoSuchClass),
@@ -153,33 +159,62 @@ fn run(ctx: &Context) -> Result<(), Error> {
     RepoBuilder::new()
         .fetch_options(fo)
         .with_checkout(co)
+        .branch(&ctx.branch)
         .clone(&ctx.url, &ctx.tmp_path)
         .map_err(|_| Error::GitFault)?;
 
     println!("{} ->  {}", &ctx.tmp_path.display(), &ctx.path);
     let options = CopyOptions::new();
-    fs_extra::dir::copy(&ctx.tmp_path, &ctx.current_dir, &options).map_err(|e| {
+    fs_extra::dir::copy(
+        Path::new(&ctx.tmp_path).join(&ctx.package),
+        &ctx.current_dir,
+        &options,
+    )
+    .map_err(|e| {
         println!("{}", e);
         Error::FileSystemFault
     })?;
 
-    std::fs::rename(Path::new(&ctx.tmp_path).file_name().unwrap(), &ctx.path).map_err(|e| {
+    std::fs::rename(&ctx.package, &ctx.path).map_err(|e| {
         println!("{}", e);
         Error::FileSystemRename
     })?;
-    
-    std::fs::remove_dir_all(Path::join(Path::new(&ctx.path), ".git")).map_err(|e| {
-        println!("{}", e);
-        Error::FileSystemRemoveDir
-    })?;
 
-    println!();
+    //std::fs::remove_dir_all(Path::join(Path::new(&ctx.path), ".git")).map_err(|e| {
+    //    println!("{}", e);
+    //    Error::FileSystemRemoveDir
+    //})?;
 
     Ok(())
 }
 
 fn main() {
-    let args = Args::parse();
+    let cmd = clap::Command::new("cargo")
+        .bin_name("cargo")
+        .subcommand_required(true)
+        .subcommand(
+            clap::command!("contemplate")
+                .arg(clap::arg!(<CLASS>).value_parser(clap::value_parser!(std::string::String)))
+                .arg(clap::arg!(<DEST>).value_parser(clap::value_parser!(std::string::String))),
+        );
+    let matches = cmd.get_matches();
+    let matches = match matches.subcommand() {
+        Some(("contemplate", matches)) => matches,
+        _ => unreachable!("clap should ensure we don't get here"),
+    };
+
+    let class = matches
+        .get_one::<String>("CLASS")
+        .map(|s| s.as_str())
+        .unwrap()
+        .to_string();
+    let dest = matches
+        .get_one::<String>("DEST")
+        .map(|s| s.as_str())
+        .unwrap()
+        .to_string();
+
+    let args = Args { class, dest };
     let context = Context::try_from(args).unwrap();
     run(&context).unwrap();
 }

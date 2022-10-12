@@ -15,12 +15,13 @@ cargo-contemplate <class>
 Currently supported classes: 
 
 - phat-contract
+- phat-contract-with-sideprog
 
 ## Examples
 
 
 ```shell
-cargo contemplate phat-contract
+cargo contemplate phat-contract a-starter-project
 ```
 
 The command above will create a directory with the name "phat-contract-start" in the current directory
