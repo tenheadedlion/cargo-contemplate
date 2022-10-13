@@ -29,8 +29,8 @@ fn random_path() -> PathBuf {
 }
 
 static URLS: phf::Map<&'static str, (&'static str, &'static str, &'static str)> = phf_map! {
-    "phat-contract-with-sideprog" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "master", "log_server"),
-    "phat-contract" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "plain-phat-contract", "erc20"),
+    "phat-contract-with-sideprog" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "master", "log_server-a00c26e4ff2173713db9afca5a82aee3"),
+    "phat-contract" => ("https://github.com/tenheadedlion/phat-contract-starter.git", "plain-phat-contract", "erc20-497c0f607b393edb86f8da1bf053fb06"),
 };
 
 #[derive(Debug)]
